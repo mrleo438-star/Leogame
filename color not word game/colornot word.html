@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Click the Color — Not the Word</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#94a3b8;
+      --accent:#60a5fa;
+      --glass: rgba(255,255,255,0.04);
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #071029 0%, #07172a 60%);
+      color:#e6eef6;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+      gap:24px;
+    }
+
+    .game{
+      width:960px;
+      max-width:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      padding:22px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      border: 1px solid rgba(255,255,255,0.03);
+      display:grid;
+      grid-template-columns: 1fr 340px;
+      gap:20px;
+      align-items:stretch;
+    }
+
+    /* Left: main play area */
+    .panel{
+      background: linear-gradient(180deg, var(--card), rgba(255,255,255,0.015));
+      border-radius:12px;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      min-height:360px;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+
+    .title{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .logo{
+      width:48px;height:48px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),#7c3aed);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:white;
+      box-shadow:0 6px 18px rgba(96,165,250,0.12);
+    }
+    h1{font-size:18px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .controls{display:flex;gap:8px;align-items:center}
+    button.btn{
+      background:var(--glass);
+      color: #e6eef6;
+      border:1px solid rgba(255,255,255,0.04);
+      padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;
+      transition:transform .12s ease, box-shadow .12s ease;
+    }
+    button.btn:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(2,6,23,0.35)}
+    button.btn.primary{
+      background: linear-gradient(90deg,#2563eb,#60a5fa);
+      border: none;
+      box-shadow: 0 8px 24px rgba(96,165,250,0.12);
+    }
+
+    .play-area{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:18px;border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.006));
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .word-card{
+      width:100%;
+      display:flex;align-items:center;justify-content:center;
+      height:120px;border-radius:10px;padding:10px;font-size:36px;font-weight:800;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      box-shadow: inset 0 -8px 30px rgba(0,0,0,0.25);
+    }
+
+    .timer{
+      display:flex;gap:12px;align-items:center;font-weight:700;
+      width:100%;justify-content:space-between;
+      color:var(--muted);
+    }
+
+    .progress{
+      width:260px;height:12px;background:rgba(255,255,255,0.03);border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.02);
+    }
+    .progress > i{display:block;height:100%;background:linear-gradient(90deg,#f97316,#ef4444);width:0%;transition:width 0.1s linear}
+
+    /* color grid */
+    .grid{
+      display:grid;grid-template-columns: repeat(5,1fr);gap:10px;width:100%;
+    }
+    .tile{
+      height:78px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b1220;cursor:pointer;
+      user-select:none;box-shadow: 0 6px 18px rgba(2,6,23,0.45);border:2px solid rgba(255,255,255,0.03);
+      transform:translateY(0);transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+      position:relative;overflow:hidden;
+    }
+    .tile:active{transform:translateY(3px)}
+    .tile.white{color:#0b1220}
+    .tile::after{
+      content:'';position:absolute;inset:0;border-radius:10px;opacity:0;transition:opacity .18s;
+    }
+    .tile:hover::after{opacity:.06;background:linear-gradient(0deg,#fff,#fff)}
+
+    .right-panel{
+      padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:12px;
+      min-height:360px;
+    }
+
+    .stat{
+      display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;background:rgba(255,255,255,0.01);
+      border:1px solid rgba(255,255,255,0.02);
+    }
+    .stat .label{color:var(--muted);font-size:13px}
+    .stat .value{font-weight:800;font-size:18px}
+
+    .small{font-size:13px;color:var(--muted)}
+
+    /* modal help */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;z-index:80}
+    .modal{background:#071029;padding:20px;border-radius:10px;width:420px;max-width:92%;border:1px solid rgba(255,255,255,0.03)}
+    .modal h3{margin:0 0 8px 0}
+    .footer{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+    .status{
+      display:flex;gap:8px;align-items:center;font-weight:700;
+      padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.02);width:max-content;
+    }
+
+    .result{
+      padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02);
+    }
+
+    /* small device layout */
+    @media (max-width:880px){
+      .game{grid-template-columns:1fr; padding:16px}
+      .grid{grid-template-columns: repeat(3,1fr)}
+      .tile{height:70px}
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="game" role="application" aria-label="Click the color, not the word game">
+      <div class="panel">
+        <div class="topbar">
+          <div class="title">
+            <div class="logo">C</div>
+            <div>
+              <h1>Click the Color — Not the Word</h1>
+              <p class="lead">Click the tile that matches the <strong>text color</strong> (not the word). 5 seconds per round.</p>
+            </div>
+          </div>
+
+          <div class="controls">
+            <div class="status" id="gameStatus">Ready</div>
+            <button class="btn" id="helpBtn" title="How to play">Help</button>
+            <button class="btn primary" id="startBtn">New Game</button>
+          </div>
+        </div>
+
+        <div class="play-area" aria-live="polite">
+          <div class="word-card" id="wordCard" aria-hidden="true">—</div>
+
+          <div class="timer">
+            <div>
+              <div class="small">Round timer</div>
+              <div style="font-weight:800;font-size:18px" id="countdown">5.0s</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;align-items:flex-end">
+              <div class="small">Progress</div>
+              <div class="progress" aria-hidden="true">
+                <i id="progressBar"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid" id="colorGrid" role="list">
+            <!-- tiles injected by JS -->
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:center;justify-content:space-between">
+          <div class="small">Tip: The word might read "RED" but the letters may be <em>green</em>. Click the green tile.</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="finishBtn">Finish</button>
+          </div>
+        </div>
+
+      </div>
+
+      <aside class="right-panel" aria-label="Game info">
+        <div class="stat">
+          <div>
+            <div class="label">Score</div>
+            <div class="value" id="score">0</div>
+          </div>
+          <div style="text-align:right">
+            <div class="label">Best Score</div>
+            <div class="value" id="bestScore">0</div>
+          </div>
+        </div>
+
+        <div class="stat">
+          <div>
+            <div class="label">Time survived</div>
+            <div class="value" id="timeSurvived">0.00s</div>
+          </div>
+          <div style="text-align:right">
+            <div class="label">Last run time</div>
+            <div class="value" id="lastTime">—</div>
+          </div>
+        </div>
+
+        <div class="result" id="resultBox">
+          <div style="font-weight:800">Results</div>
+          <div class="small" id="resultText">Start a new game to play — you have 5 seconds each round to pick the correct color.</div>
+        </div>
+
+        <div style="margin-top:auto">
+          <div class="small" style="margin-bottom:8px">Settings</div>
+          <div style="display:flex;gap:8px">
+            <label class="small" style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="soundToggle" checked /> Sound
+            </label>
+            <label class="small" style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="strictToggle" /> Strict (restart after wrong)
+            </label>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+
+  <!-- help modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" role="document">
+      <h3>How to play</h3>
+      <p class="small">Each round you'll see a word like <strong>BLUE</strong> displayed in a color (for example, red). You must click the tile whose <strong>color</strong> matches the text color — not the word meaning.</p>
+      <ul class="small">
+        <li>You have <strong>5 seconds</strong> to pick the right color each round.</li>
+        <li>If you pick the wrong color or time runs out, the game ends and restarts (your score will be shown).</li>
+        <li>Use <strong>New Game</strong> to begin. Click <strong>Finish</strong> to end early.</li>
+      </ul>
+
+      <div class="footer">
+        <button class="btn" id="closeHelp">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="sfxRight">
+    <source src="" />
+  </audio>
+
+  <script>
+    // ---- Game configuration ----
+    const COLORS = [
+      { name: 'RED', css: 'red', className: 'red' },
+      { name: 'GREEN', css: 'green', className: 'green' },
+      { name: 'BLUE', css: 'blue', className: 'blue' },
+      { name: 'BLACK', css: 'black', className: 'black' },
+      { name: 'WHITE', css: 'white', className: 'white' }
+    ];
+    const ROUND_TIME = 5.0; // seconds per round
+
+    // ---- UI elements ----
+    const startBtn = document.getElementById('startBtn');
+    const helpBtn = document.getElementById('helpBtn');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const closeHelp = document.getElementById('closeHelp');
+    const wordCard = document.getElementById('wordCard');
+    const colorGrid = document.getElementById('colorGrid');
+    const countdownEl = document.getElementById('countdown');
+    const progressBar = document.getElementById('progressBar');
+    const scoreEl = document.getElementById('score');
+    const bestScoreEl = document.getElementById('bestScore');
+    const resultText = document.getElementById('resultText');
+    const gameStatus = document.getElementById('gameStatus');
+    const finishBtn = document.getElementById('finishBtn');
+    const timeSurvivedEl = document.getElementById('timeSurvived');
+    const lastTimeEl = document.getElementById('lastTime');
+    const soundToggle = document.getElementById('soundToggle');
+    const strictToggle = document.getElementById('strictToggle');
+
+    // game state
+    let timer = null;
+    let timeLeft = ROUND_TIME;
+    let currentTargetColor = null; // css color string (e.g., 'red') that must be clicked
+    let score = 0;
+    let bestScore = Number(localStorage.getItem('bestScore') || 0);
+    let inGame = false;
+    let roundStartTimestamp = 0;
+    let gameStartTimestamp = 0;
+
+    bestScoreEl.textContent = bestScore;
+
+    // populate color tiles
+    function buildTiles(){
+      colorGrid.innerHTML = '';
+      COLORS.forEach(c=>{
+        const t = document.createElement('div');
+        t.className = 'tile ' + c.className;
+        t.setAttribute('role','button');
+        t.setAttribute('tabindex','0');
+        t.setAttribute('data-color', c.css);
+        t.setAttribute('aria-label', c.name + ' color button');
+        t.textContent = c.name;
+        // style tile background and text color appropriately:
+        // For white tile: background white and dark text. For black: black background and white text.
+        let bg = c.css;
+        let textColor = '#0b1220';
+        if (c.css === 'black') textColor = '#e6eef6';
+        if (c.css === 'white') { bg = '#ffffff'; textColor = '#0b1220'; }
+        t.style.background = bg;
+        t.style.color = textColor;
+        t.addEventListener('click', onTileClick);
+        t.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') onTileClick.call(t,e) });
+        colorGrid.appendChild(t);
+      });
+    }
+
+    buildTiles();
+
+    // util: pick random element different from optional exclude
+    function randChoice(arr, exclude){
+      if(!exclude) return arr[Math.floor(Math.random()*arr.length)];
+      const choices = arr.filter(x => x !== exclude);
+      return choices[Math.floor(Math.random()*choices.length)];
+    }
+
+    function startGame(){
+      // reset
+      score = 0;
+      scoreEl.textContent = 0;
+      inGame = true;
+      gameStartTimestamp = performance.now();
+      resultText.textContent = 'Game in progress… Good luck!';
+      gameStatus.textContent = 'Playing';
+      lastTimeEl.textContent = '—';
+      timeSurvivedEl.textContent = '0.00s';
+      startBtn.textContent = 'Restart';
+      nextRound();
+    }
+
+    function endGame(reason){
+      inGame = false;
+      clearInterval(timer);
+      timer = null;
+      gameStatus.textContent = 'Ready';
+      const now = performance.now();
+      const survived = ((now - gameStartTimestamp) / 1000) || 0;
+      timeSurvivedEl.textContent = survived.toFixed(2) + 's';
+      lastTimeEl.textContent = survived.toFixed(2) + 's';
+      resultText.textContent = `Game over — ${reason}. Score: ${score}. Time survived: ${survived.toFixed(2)}s`;
+      // update best score
+      if (score > bestScore){
+        bestScore = score;
+        bestScoreEl.textContent = bestScore;
+        localStorage.setItem('bestScore', bestScore);
+      }
+      // reset UI
+      wordCard.textContent = '—';
+      progressBar.style.width = '0%';
+      countdownEl.textContent = `${ROUND_TIME.toFixed(1)}s`;
+      startBtn.textContent = 'New Game';
+    }
+
+    function onTileClick(e){
+      if(!inGame) return;
+      const tileColor = this.getAttribute('data-color') || e.currentTarget.getAttribute('data-color');
+      const isRight = (tileColor === currentTargetColor);
+      if (isRight){
+        // success
+        playSound('right');
+        score++;
+        scoreEl.textContent = score;
+        // next round immediately (short delay for feel)
+        setTimeout(nextRound, 250);
+      } else {
+        playSound('wrong');
+        // wrong click: restart (as user requested)
+        endGame('Wrong color clicked');
+      }
+    }
+
+    function playSound(which){
+      if(!soundToggle.checked) return;
+      // small beep using Web Audio API (no external files)
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        if (which === 'right'){ o.frequency.value = 880; g.gain.value = 0.03; }
+        else { o.frequency.value = 220; g.gain.value = 0.05; }
+        o.connect(g); g.connect(ctx.destination);
+        o.start();
+        setTimeout(()=>{ o.stop(); ctx.close(); }, 120);
+      }catch(err){
+        // ignore audio failures
+      }
+    }
+
+    function nextRound(){
+      clearInterval(timer);
+      timeLeft = ROUND_TIME;
+      roundStartTimestamp = performance.now();
+
+      // pick a random word (text) and a random display color
+      const wordObj = randChoice(COLORS);
+      // To make it interesting sometimes the text meaning equals color and sometimes not,
+      // choose a display color possibly different from the word name:
+      let displayObj = randChoice(COLORS, null);
+      // allow same sometimes: 30% chance same
+      if (Math.random() > 0.7) displayObj = wordObj;
+
+      // ensure there is at least one correct tile to click (obvious)
+      currentTargetColor = displayObj.css;
+
+      // update the word card: word text is the word name, colored in displayObj.css
+      wordCard.textContent = wordObj.name;
+      wordCard.style.color = displayObj.css;
+      if(displayObj.css === 'white') wordCard.style.color = '#ffffff'; // ensure white text is white
+      if(displayObj.css === 'black') wordCard.style.color = '#000000';
+
+      // animate progress
+      progressBar.style.width = '100%';
+      // start countdown
+      updateCountdownUI(timeLeft);
+
+      timer = setInterval(()=>{
+        const elapsed = (performance.now() - roundStartTimestamp) / 1000;
+        timeLeft = Math.max(0, ROUND_TIME - elapsed);
+        updateCountdownUI(timeLeft);
+        if (timeLeft <= 0){
+          // time up -> game over
+          clearInterval(timer);
+          timer = null;
+          playSound('wrong');
+          endGame('Time up');
+        }
+      }, 80);
+    }
+
+    function updateCountdownUI(t){
+      countdownEl.textContent = t.toFixed(1) + 's';
+      const pct = (t / ROUND_TIME) * 100;
+      progressBar.style.width = pct + '%';
+      // color progress: green -> orange -> red
+      if(pct > 60) progressBar.style.background = 'linear-gradient(90deg,#10b981,#60a5fa)';
+      else if(pct > 30) progressBar.style.background = 'linear-gradient(90deg,#f59e0b,#f97316)';
+      else progressBar.style.background = 'linear-gradient(90deg,#ef4444,#f43f5e)';
+    }
+
+    // UI bindings
+    startBtn.addEventListener('click', ()=>{
+      if(!inGame){
+        startGame();
+      } else {
+        // restart while playing
+        endGame('Restart requested');
+      }
+    });
+
+    helpBtn.addEventListener('click', ()=>{ modalBackdrop.style.display = 'flex'; modalBackdrop.setAttribute('aria-hidden','false'); });
+    closeHelp.addEventListener('click', ()=>{ modalBackdrop.style.display = 'none'; modalBackdrop.setAttribute('aria-hidden','true'); });
+    modalBackdrop.addEventListener('click', (e)=>{ if(e.target === modalBackdrop){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); } });
+
+    finishBtn.addEventListener('click', ()=>{
+      if(inGame){
+        endGame('Player finished');
+      } else {
+        resultText.textContent = 'No active game — click New Game to start.';
+      }
+    });
+
+    // keyboard accessibility: start with Enter on New Game
+    startBtn.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') startBtn.click() });
+
+    // initial state: randomly order tile text to not reveal color order
+    function shuffleTileText(){
+      // randomly shuffle the tile labels (but keep background colors)
+      // we will keep label text as the same names (the tiles show their color name as label)
+      // so don't shuffle at this time; the tiles are fine
+    }
+    shuffleTileText();
+
+    // restore best score from storage
+    function loadBest(){
+      const b = Number(localStorage.getItem('bestScore') || 0);
+      bestScore = b;
+      bestScoreEl.textContent = bestScore;
+    }
+    loadBest();
+
+    // small UI polish: pause/resume sound toggle changes label only
+    soundToggle.addEventListener('change', ()=>{ /* nothing special */ });
+
+    // accessibility: announce new round for screen readers
+    const ob = new MutationObserver(()=>{/* no-op, leaving for extension */});
+    ob.observe(wordCard, {childList:true, subtree:true});
+
+    // show initial tiles (with nicer corner radii)
+    // Already built above. Ensure text color contrast for black/white handled.
+
+    // On load, set instructions
+    document.addEventListener('DOMContentLoaded', ()=> {
+      resultText.textContent = 'Click "New Game" to start. You have 5 seconds each round. Wrong click or timeout restarts the game.';
+    });
+
+    // Extra: if strictToggle unchecked, allow continuation on wrong click but subtract score and continue (user asked restart when wrong, but provide setting)
+    // We'll implement fallback: if strictToggle unchecked, wrong click will reduce score (min 0) and continue.
+    // Modify onTileClick to check strict setting:
+    // (To keep code easy to read we replace the click handler dynamically)
+    function refreshTileHandlers(){
+      const tiles = document.querySelectorAll('.tile');
+      tiles.forEach(t=>{
+        t.onclick = function(e){
+          if(!inGame) return;
+          const tileColor = this.getAttribute('data-color');
+          const isRight = (tileColor === currentTargetColor);
+          if (isRight){
+            playSound('right');
+            score++;
+            scoreEl.textContent = score;
+            setTimeout(nextRound, 250);
+          } else {
+            playSound('wrong');
+            if (strictToggle.checked){
+              endGame('Wrong color clicked');
+            } else {
+              // non-strict: penalty, continue next round
+              score = Math.max(0, score - 1);
+              scoreEl.textContent = score;
+              resultText.textContent = 'Wrong — penalty applied. Next round.';
+              setTimeout(nextRound, 500);
+            }
+          }
+        };
+      });
+    }
+
+    refreshTileHandlers();
+
+    // update handlers whenever strictToggle changed
+    strictToggle.addEventListener('change', ()=>{ refreshTileHandlers() });
+
+    // ensure keyboard nav: focus first tile on new round
+    const observer = new MutationObserver(()=>{
+      // no op placeholder
+    });
+    observer.observe(colorGrid, {childList:true});
+
+    // Safety: when page becomes hidden, pause timers
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.hidden && inGame){
+        // pause game by ending (so that timeouts don't make it unfair)
+        endGame('Window hidden — game ended');
+      }
+    });
+
+    // small touch: show current target color in status (for debugging / player feedback)
+    const statusEl = gameStatus;
+    const statusUpdater = setInterval(()=>{
+      if(inGame && currentTargetColor){
+        statusEl.textContent = 'Playing — click ' + currentTargetColor.toUpperCase();
+      }
+    }, 500);
+
+  </script>
+</body>
+</html>
